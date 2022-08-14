@@ -1,0 +1,8 @@
+{
+  "properties": [
+    {
+      "name": "stethoscope.clients[0].applicationName",
+      "type": "java.lang.String",
+      "description": "Description for stethoscope.clients[0].applicationName."
+  }
+] }

@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: stethoscope
+  kafka:
+    producer:
+      properties:
+        max:
+          request:
+            size: 10000000
+    streams:
+      properties:
+        topology:
+          optimization: all
+        commit:
+          interval:
+            ms: 2000

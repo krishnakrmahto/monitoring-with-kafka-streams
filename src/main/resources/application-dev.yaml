@@ -1,0 +1,21 @@
+spring:
+  kafka:
+    bootstrap-servers:
+      - 192.168.193.67:9092
+    streams:
+      state-dir: ~/Desktop/personal/github/kafka-projects/kafka-streams/state-store-dir
+
+server:
+  port: 8082
+
+default:
+  deserialization:
+    exception:
+      handler: true
+
+stethoscope:
+  clients:
+    - applicationName: order-service
+      sourceTopic: "order.service.heartbeat"
+      sinkTopic: "order.service.evicted.instances"
+
