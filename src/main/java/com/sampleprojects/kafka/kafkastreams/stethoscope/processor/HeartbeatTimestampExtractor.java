@@ -11,6 +11,6 @@ public class HeartbeatTimestampExtractor implements TimestampExtractor {
   @Override
   public long extract(ConsumerRecord<Object, Object> record, long partitionTime) {
     Heartbeat event = (Heartbeat) record.value();
-    return event.getHeartbeatEpoch() * 100;
+    return event.getHeartbeatEpoch() * 1000;
   }
 }
