@@ -26,20 +26,20 @@ public class EvictedInstanceReckoner implements Transformer<Windowed<String>, Cl
   }
 
   @Override
-  public KeyValue<Windowed<String>, ClientInstanceSet> transform(Windowed<String> windowedKey, ClientInstanceSet latestHeartbeatSenders) {
+  public KeyValue<Windowed<String>, ClientInstanceSet> transform(Windowed<String> windowedKey, ClientInstanceSet closedWindowClientInstances) {
 
     String applicationName = windowedKey.key();
 
     Optional<ClientInstanceSet> previousWindowInstances = Optional.ofNullable(stateStore.get(applicationName));
 
     if (previousWindowInstances.isPresent()) {
-      ClientInstanceSet evictedInstances = previousWindowInstances.get().findEvictedInstances(latestHeartbeatSenders);
+      ClientInstanceSet evictedInstances = previousWindowInstances.get().findEvictedInstances(closedWindowClientInstances);
 
-      stateStore.put(applicationName, latestHeartbeatSenders);
+      stateStore.put(applicationName, closedWindowClientInstances);
 
       return KeyValue.pair(windowedKey, evictedInstances);
     } else {
-      stateStore.put(applicationName, latestHeartbeatSenders);
+      stateStore.put(applicationName, closedWindowClientInstances);
 
       return KeyValue.pair(windowedKey, new ClientInstanceSet());
     }
