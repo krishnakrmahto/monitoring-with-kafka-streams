@@ -33,7 +33,7 @@ public class HeartbeatProcessor {
 
   private final HeartbeatTimestampExtractor heartbeatTimestampExtractor;
 
-  private final String heartbeatStateStore = "test-store-7";
+  private final String stateStoreName = "clientAvailableInstances";
 
   @PostConstruct
   public void addProcessingSteps() {
@@ -44,7 +44,7 @@ public class HeartbeatProcessor {
         Consumed.with(Serdes.String(), heartbeatSerde).withTimestampExtractor(
             heartbeatTimestampExtractor));
 
-    builder.addStateStore(Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(heartbeatStateStore),
+    builder.addStateStore(Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(stateStoreName),
         Serdes.String(), heartbeatSenderInstancesSerde));
 
     sourceStream
@@ -54,7 +54,7 @@ public class HeartbeatProcessor {
             Materialized.with(Serdes.String(), heartbeatSenderInstancesSerde))
         .suppress(Suppressed.untilWindowCloses(BufferConfig.unbounded()))
         .toStream()
-        .transform(() -> new EvictedInstanceReckoner(heartbeatStateStore), heartbeatStateStore)
+        .transform(() -> new EvictedInstanceReckoner(stateStoreName), stateStoreName)
         .foreach((windowedKey, value) -> log.info("Windowed start: {}; end: {}, key:{}, value: {}", windowedKey.window().start(),
             windowedKey.window().end(), windowedKey.key(), value));
   }

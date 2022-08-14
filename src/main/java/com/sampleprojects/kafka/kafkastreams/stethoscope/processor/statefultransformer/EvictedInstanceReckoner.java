@@ -18,11 +18,11 @@ public class EvictedInstanceReckoner implements Transformer<Windowed<String>, Cl
 
   private final String stateStoreName;
 
-  private KeyValueStore<String, ClientInstanceSet> stateStore;
+  private KeyValueStore<String, ClientInstanceSet> clientAvailableInstances;
 
   @Override
   public void init(ProcessorContext processorContext) {
-    stateStore = processorContext.getStateStore(stateStoreName);
+    clientAvailableInstances = processorContext.getStateStore(stateStoreName);
   }
 
   @Override
@@ -30,16 +30,17 @@ public class EvictedInstanceReckoner implements Transformer<Windowed<String>, Cl
 
     String applicationName = windowedKey.key();
 
-    Optional<ClientInstanceSet> previousWindowInstances = Optional.ofNullable(stateStore.get(applicationName));
+    Optional<ClientInstanceSet> previousWindowInstances = Optional.ofNullable(
+        clientAvailableInstances.get(applicationName));
 
     if (previousWindowInstances.isPresent()) {
       ClientInstanceSet evictedInstances = previousWindowInstances.get().findEvictedInstances(closedWindowClientInstances);
 
-      stateStore.put(applicationName, closedWindowClientInstances);
+      clientAvailableInstances.put(applicationName, closedWindowClientInstances);
 
       return KeyValue.pair(windowedKey, evictedInstances);
     } else {
-      stateStore.put(applicationName, closedWindowClientInstances);
+      clientAvailableInstances.put(applicationName, closedWindowClientInstances);
 
       return KeyValue.pair(windowedKey, new ClientInstanceSet());
     }
