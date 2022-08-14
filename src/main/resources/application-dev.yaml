@@ -1,7 +1,9 @@
 spring:
   kafka:
     bootstrap-servers:
-      - 192.168.193.67:9092
+      - localhost:9092
+    streams:
+      state-dir: /Users/krishnakumar.m/Desktop/personal/github/kafka-projects/kafka-streams/state-store-dir
 
 server:
   port: 8082
@@ -18,4 +20,4 @@ stethoscope:
       sinkTopic: "order.service.evicted.instances"
 logging:
   level:
-    org.apache.kafka: DEBUG
+    org.apache.kafka: INFO
