@@ -33,13 +33,12 @@ public class HeartbeatProcessor {
 
   private final HeartbeatTimestampExtractor heartbeatTimestampExtractor;
 
-  private final String heartbeatStateStore = "HEARTBEAT_TEST_STORE";
+  private final String heartbeatStateStore = "test-store-7";
 
   @PostConstruct
   public void addProcessingSteps() {
 
-    Duration windowSize = Duration.ofSeconds(5);
-    Duration grace = Duration.ofSeconds(1);
+    Duration windowSize = Duration.ofHours(1);
 
     KStream<String, Heartbeat> sourceStream = builder.stream("application.heartbeat",
         Consumed.with(Serdes.String(), heartbeatSerde).withTimestampExtractor(
@@ -50,7 +49,7 @@ public class HeartbeatProcessor {
 
     sourceStream
         .groupByKey(Grouped.with(Serdes.String(), heartbeatSerde))
-        .windowedBy(TimeWindows.of(windowSize).grace(grace))
+        .windowedBy(TimeWindows.ofSizeWithNoGrace(windowSize))
         .aggregate(ClientInstanceSet::new, ((key, value, aggregate) -> aggregate.addInstance(value.getInstanceName())),
             Materialized.with(Serdes.String(), heartbeatSenderInstancesSerde))
         .suppress(Suppressed.untilWindowCloses(BufferConfig.unbounded()))
