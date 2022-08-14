@@ -19,5 +19,10 @@
       "name": "stethoscope.clients[0].windowDurationSeconds",
       "type": "java.lang.String",
       "description": "Description for stethoscope.clients[0].windowDurationSeconds."
+    },
+    {
+      "name": "stethoscope.clients",
+      "type": "java.lang.String",
+      "description": "Description for stethoscope.clients."
     }
   ] }

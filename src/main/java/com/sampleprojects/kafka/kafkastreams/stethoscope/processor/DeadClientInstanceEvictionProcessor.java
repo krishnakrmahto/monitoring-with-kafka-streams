@@ -3,7 +3,7 @@ package com.sampleprojects.kafka.kafkastreams.stethoscope.processor;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.config.AppSerdes;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.ClientInstanceSet;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.Heartbeat;
-import com.sampleprojects.kafka.kafkastreams.stethoscope.processor.statefultransformer.EvictedInstanceReckoner;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.processor.statefultransformer.LastWindowDeadInstanceEvaluator;
 import java.time.Duration;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class HeartbeatProcessor {
+public class DeadClientInstanceEvictionProcessor {
 
   private final StreamsBuilder builder;
 
@@ -37,8 +37,7 @@ public class HeartbeatProcessor {
     Duration windowSize = Duration.ofHours(1);
 
     KStream<String, Heartbeat> sourceStream = builder.stream("application.heartbeat",
-        Consumed.with(Serdes.String(), AppSerdes.heartbeatSerde()).withTimestampExtractor(
-            heartbeatTimestampExtractor));
+        Consumed.with(Serdes.String(), AppSerdes.heartbeatSerde()).withTimestampExtractor(heartbeatTimestampExtractor));
 
     builder.addStateStore(Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(stateStoreName),
         Serdes.String(), AppSerdes.clientInstanceSetSerde()));
@@ -50,7 +49,7 @@ public class HeartbeatProcessor {
             Materialized.with(Serdes.String(), AppSerdes.clientInstanceSetSerde()))
         .suppress(Suppressed.untilWindowCloses(BufferConfig.unbounded()))
         .toStream()
-        .transform(() -> new EvictedInstanceReckoner(stateStoreName), stateStoreName)
+        .transform(() -> new LastWindowDeadInstanceEvaluator(stateStoreName), stateStoreName)
         .foreach((windowedKey, value) -> log.info("Windowed start: {}; end: {}, key:{}, value: {}", windowedKey.window().start(),
             windowedKey.window().end(), windowedKey.key(), value));
   }

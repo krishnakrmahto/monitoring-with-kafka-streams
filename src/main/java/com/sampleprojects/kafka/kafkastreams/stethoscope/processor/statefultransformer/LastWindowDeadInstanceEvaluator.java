@@ -14,7 +14,7 @@ import org.apache.kafka.streams.state.KeyValueStore;
 @Builder
 @RequiredArgsConstructor
 @AllArgsConstructor
-public class EvictedInstanceReckoner implements Transformer<Windowed<String>, ClientInstanceSet, KeyValue<Windowed<String>, ClientInstanceSet>> {
+public class LastWindowDeadInstanceEvaluator implements Transformer<Windowed<String>, ClientInstanceSet, KeyValue<Windowed<String>, ClientInstanceSet>> {
 
   private final String stateStoreName;
 
