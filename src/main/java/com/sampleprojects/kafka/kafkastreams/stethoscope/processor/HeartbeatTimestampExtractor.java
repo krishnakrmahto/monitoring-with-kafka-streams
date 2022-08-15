@@ -1,6 +1,6 @@
 package com.sampleprojects.kafka.kafkastreams.stethoscope.processor;
 
-import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.Heartbeat;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.consumed.Heartbeat;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.streams.processor.TimestampExtractor;
 import org.springframework.stereotype.Component;

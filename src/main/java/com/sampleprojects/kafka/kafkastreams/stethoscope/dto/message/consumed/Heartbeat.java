@@ -1,4 +1,4 @@
-package com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message;
+package com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.consumed;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

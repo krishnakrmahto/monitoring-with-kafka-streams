@@ -15,9 +15,11 @@ default:
 
 stethoscope:
   clients:
-    - applicationName: order-service
-      sourceTopic: "order.service.heartbeat"
-      sinkTopic: "order.service.evicted.instances"
+    instanceEvictionInfo:
+      - applicationName: order-service
+        windowDurationSeconds: 3600
+        graceDurationSeconds: 0
+        sinkTopic: "order.service.evicted.instances"
 logging:
   level:
     org.apache.kafka: INFO
