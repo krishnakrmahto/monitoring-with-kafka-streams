@@ -6,9 +6,9 @@ import com.sampleprojects.kafka.kafkastreams.stethoscope.config.clientinstanceev
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.consumed.Heartbeat;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.ClientInstanceSet;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.DeadInstanceWindow;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.util.WindowedHeartbeats;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.TestInputTopic;
@@ -30,6 +30,11 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
   private static final String heartbeatSourceTopic = "application.evaluateDeadInstance.heartbeat";
 
   private final static String applicationName = "application";
+
+  private final static List<Heartbeat> firstWindowHeartbeats = WindowedHeartbeats.getFirstWindowHeartbeats();
+  private final static List<Heartbeat> secondWindowHeartbeats = WindowedHeartbeats.getSecondWindowHeartbeats();
+  private final static List<Heartbeat> thirdWindowHeartbeats = WindowedHeartbeats.getThirdWindowHeartbeats();
+  private final static List<Heartbeat> fourthWindowHeartbeats = WindowedHeartbeats.getFourthWindowHeartbeats();
 
   @BeforeAll
   static void setUp() {
@@ -62,9 +67,10 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
   @Test
   void sinksEmptyDeadInstanceListWhenTheVeryFirstWindowCloses() {
 
-    applicationSameWindowHeartbeatStream().forEach(heartbeat -> sourceTopic.pipeInput(applicationName, heartbeat));
+    firstWindowHeartbeats.forEach(heartbeat -> sourceTopic.pipeInput(applicationName, heartbeat));
 
-    sourceTopic.pipeInput(applicationName, heartbeatThatClosesTheLastWindow());
+    Heartbeat heartbeatThatClosesFirstWindow = secondWindowHeartbeats.get(0);
+    sourceTopic.pipeInput(applicationName, heartbeatThatClosesFirstWindow);
 
     String sinkTopic = instanceEvictionConfig.getInstanceEvictionInfo().get(0).getSinkTopic();
     TestOutputTopic<DeadInstanceWindow, ClientInstanceSet> applicationSinkTopic = topologyTestDriver.createOutputTopic(
@@ -73,29 +79,7 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
     Assertions.assertEquals(applicationSinkTopic.readValue(), new ClientInstanceSet(Collections.emptySet()));
   }
 
-  private Stream<Heartbeat> applicationSameWindowHeartbeatStream() {
-    Heartbeat instance1Heartbeat = Heartbeat.builder()
-        .instanceName("instance1")
-        .heartbeatEpoch(1660455801)
-        .build();
+  void sinksDeadInstancesFromTheFirstWindowWhenTheSecondWindowCloses() {
 
-    Heartbeat instance2Heartbeat = Heartbeat.builder()
-        .instanceName("instance2")
-        .heartbeatEpoch(1660455802)
-        .build();
-
-    Heartbeat instance3Heartbeat = Heartbeat.builder()
-        .instanceName("instance3")
-        .heartbeatEpoch(1660455803)
-        .build();
-
-    return Stream.of(instance1Heartbeat, instance2Heartbeat, instance3Heartbeat);
-  }
-
-  private Heartbeat heartbeatThatClosesTheLastWindow() {
-    return Heartbeat.builder()
-        .instanceName("instance1")
-        .heartbeatEpoch(1660460001)
-        .build();
   }
 }
