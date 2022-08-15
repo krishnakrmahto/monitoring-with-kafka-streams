@@ -2,7 +2,7 @@ package com.sampleprojects.kafka.kafkastreams.stethoscope.processor;
 
 import com.sampleprojects.kafka.kafkastreams.stethoscope.config.AppSerdes;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.config.clientinstanceeviction.ClientInstanceEvictionConfig;
-import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.ClientInstanceSet;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.ClientInstanceSet;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.processor.statefultransformer.LastWindowDeadInstanceEvaluator;
 import java.time.Duration;
 import javax.annotation.PostConstruct;
@@ -57,7 +57,7 @@ public class DeadClientInstanceProcessor {
           .toStream()
           .transform(() -> new LastWindowDeadInstanceEvaluator(stateStoreName), stateStoreName)
           .peek((key, evictedInstances) -> log.info("key: {}, value: {}", key, evictedInstances))
-          .to(clientInstanceEvictionInfo.getSinkTopic(), Produced.with(AppSerdes.evictedInstancesForWindowSerde(),
+          .to(clientInstanceEvictionInfo.getSinkTopic(), Produced.with(AppSerdes.deadInstanceWindowSerde(),
               AppSerdes.clientInstanceSetSerde()));
 
     });

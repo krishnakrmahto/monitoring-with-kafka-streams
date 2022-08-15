@@ -19,11 +19,11 @@ stethoscope:
       - application-name: order-service
         window-duration-seconds: 3600
         grace-duration-seconds: 0
-        sink-topic: "order.service.evicted.instances"
+        sink-topic: "orderService.deadInstances"
       - application-name: orderbox
         window-duration-seconds: 3600
         grace-duration-seconds: 0
-        sink-topic: "orderbox.evicted.instances"
+        sink-topic: "orderbox.deadInstances"
 logging:
   level:
     org.apache.kafka: INFO

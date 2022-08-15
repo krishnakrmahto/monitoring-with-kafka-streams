@@ -1,4 +1,4 @@
-package com.sampleprojects.kafka.kafkastreams.stethoscope.dto;
+package com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced;
 
 import java.util.HashSet;
 import java.util.Set;

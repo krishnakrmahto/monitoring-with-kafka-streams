@@ -1,7 +1,7 @@
 package com.sampleprojects.kafka.kafkastreams.stethoscope.processor.statefultransformer;
 
-import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.ClientInstanceSet;
-import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.EvictedInstancesForWindow;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.ClientInstanceSet;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.DeadInstanceWindow;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +16,7 @@ import org.apache.kafka.streams.state.KeyValueStore;
 @Builder
 @RequiredArgsConstructor
 @AllArgsConstructor
-public class LastWindowDeadInstanceEvaluator implements Transformer<Windowed<String>, ClientInstanceSet, KeyValue<EvictedInstancesForWindow, ClientInstanceSet>> {
+public class LastWindowDeadInstanceEvaluator implements Transformer<Windowed<String>, ClientInstanceSet, KeyValue<DeadInstanceWindow, ClientInstanceSet>> {
 
   private final String stateStoreName;
 
@@ -28,7 +28,7 @@ public class LastWindowDeadInstanceEvaluator implements Transformer<Windowed<Str
   }
 
   @Override
-  public KeyValue<EvictedInstancesForWindow, ClientInstanceSet> transform(Windowed<String> windowedKey, ClientInstanceSet closedWindowClientInstances) {
+  public KeyValue<DeadInstanceWindow, ClientInstanceSet> transform(Windowed<String> windowedKey, ClientInstanceSet closedWindowClientInstances) {
 
     String applicationName = windowedKey.key();
 
@@ -36,7 +36,7 @@ public class LastWindowDeadInstanceEvaluator implements Transformer<Windowed<Str
         clientAvailableInstances.get(applicationName));
 
     Window closedWindow = windowedKey.window();
-    EvictedInstancesForWindow evictedInstancesForWindow = EvictedInstancesForWindow.builder()
+    DeadInstanceWindow deadInstanceWindow = DeadInstanceWindow.builder()
         .applicationName(applicationName)
         .startMs(closedWindow.start())
         .endMs(closedWindow.end())
@@ -47,11 +47,11 @@ public class LastWindowDeadInstanceEvaluator implements Transformer<Windowed<Str
 
       clientAvailableInstances.put(applicationName, closedWindowClientInstances);
 
-      return KeyValue.pair(evictedInstancesForWindow, evictedInstances);
+      return KeyValue.pair(deadInstanceWindow, evictedInstances);
     } else {
       clientAvailableInstances.put(applicationName, closedWindowClientInstances);
 
-      return KeyValue.pair(evictedInstancesForWindow, new ClientInstanceSet());
+      return KeyValue.pair(deadInstanceWindow, new ClientInstanceSet());
     }
   }
 
