@@ -3,8 +3,6 @@ package com.sampleprojects.kafka.kafkastreams.stethoscope.processor.statefultran
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.ClientInstanceSet;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.DeadInstanceWindow;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.Transformer;
@@ -13,9 +11,7 @@ import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
 
-@Builder
 @RequiredArgsConstructor
-@AllArgsConstructor
 public class LastWindowDeadInstanceEvaluator implements Transformer<Windowed<String>, ClientInstanceSet, KeyValue<DeadInstanceWindow, ClientInstanceSet>> {
 
   private final String stateStoreName;

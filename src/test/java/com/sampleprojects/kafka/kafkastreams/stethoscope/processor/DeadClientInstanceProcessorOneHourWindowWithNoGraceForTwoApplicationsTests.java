@@ -16,6 +16,7 @@ import org.apache.kafka.streams.TestInputTopic;
 import org.apache.kafka.streams.TestOutputTopic;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.TopologyTestDriver;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,8 @@ public class DeadClientInstanceProcessorOneHourWindowWithNoGraceForTwoApplicatio
 
   private TestOutputTopic<DeadInstanceWindow, ClientInstanceSet> application1SinkTopic;
   private TestOutputTopic<DeadInstanceWindow, ClientInstanceSet> application2SinkTopic;
+
+  private TopologyTestDriver topologyTestDriver;
 
   private static final String heartbeatSourceTopic = "application.evaluateDeadInstance.heartbeat";
 
@@ -65,8 +68,8 @@ public class DeadClientInstanceProcessorOneHourWindowWithNoGraceForTwoApplicatio
     deadClientInstanceProcessor.addProcessingSteps();
 
     Topology topology = builder.build();
-    @SuppressWarnings("resource")
-    TopologyTestDriver topologyTestDriver = new TopologyTestDriver(topology);
+
+    topologyTestDriver = new TopologyTestDriver(topology);
 
     sourceTopic = topologyTestDriver.createInputTopic(heartbeatSourceTopic,
         Serdes.String().serializer(), AppSerdes.heartbeatSerde().serializer());
@@ -77,6 +80,11 @@ public class DeadClientInstanceProcessorOneHourWindowWithNoGraceForTwoApplicatio
         AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
     application2SinkTopic = topologyTestDriver.createOutputTopic(application2SinkTopicName,
         AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
+  }
+
+  @AfterEach
+  void afterEach() {
+    topologyTestDriver.close();
   }
 
   @Test
