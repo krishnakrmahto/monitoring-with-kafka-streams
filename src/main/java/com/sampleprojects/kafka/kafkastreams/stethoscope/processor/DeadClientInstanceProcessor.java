@@ -23,17 +23,17 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class DeadClientInstanceEvictionProcessor {
+public class DeadClientInstanceProcessor {
 
   private final StreamsBuilder builder;
 
   private final HeartbeatTimestampExtractor heartbeatTimestampExtractor;
 
-  private final String stateStoreName = "clientAvailableInstances";
+  private final String stateStoreName = "test-state-store-11";
 
   private final ClientInstanceEvictionConfig clientInstanceEvictionConfig;
 
-  private static final String heartbeatSourceTopic = "application.heartbeat";
+  private static final String heartbeatSourceTopic = "application.evaluateDeadInstance.heartbeat";
 
   @PostConstruct
   public void addProcessingSteps() {
