@@ -6,7 +6,6 @@ import com.sampleprojects.kafka.kafkastreams.stethoscope.config.clientinstanceev
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.consumed.Heartbeat;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.ClientInstanceSet;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.DeadInstanceWindow;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -20,23 +19,17 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class DeadClientInstanceProcessorOneHourWindowedWithNoGraceTests {
+class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests {
 
   private static TopologyTestDriver topologyTestDriver;
 
-  private static TestInputTopic<String, Heartbeat> testSourceTopic;
+  private static TestInputTopic<String, Heartbeat> sourceTopic;
+
+  private static ClientInstanceEvictionConfig instanceEvictionConfig;
 
   private static final String heartbeatSourceTopic = "application.evaluateDeadInstance.heartbeat";
 
-  private final static String application1Name = "application1";
-
-  private final static ClientInstanceEvictionInfo testClientApplicationInfo1 = ClientInstanceEvictionInfo.builder()
-      .applicationName(application1Name)
-      .windowDurationSeconds(3600)
-      .graceDurationSeconds(0)
-      .sinkTopic("application1.deadInstances")
-      .build();
-  private final static String application2Name = "application2";
+  private final static String applicationName = "application";
 
   @BeforeAll
   static void setUp() {
@@ -44,15 +37,16 @@ class DeadClientInstanceProcessorOneHourWindowedWithNoGraceTests {
     StreamsBuilder builder = new StreamsBuilder();
     HeartbeatTimestampExtractor timestampExtractor = new HeartbeatTimestampExtractor();
 
-    ClientInstanceEvictionInfo testClientApplicationInfo2 = ClientInstanceEvictionInfo.builder()
-        .applicationName(application2Name)
+    ClientInstanceEvictionInfo testClientApplicationInfo1 = ClientInstanceEvictionInfo.builder()
+        .applicationName(applicationName)
         .windowDurationSeconds(3600)
         .graceDurationSeconds(0)
-        .sinkTopic("application2.deadInstances")
+        .sinkTopic("application.deadInstances")
         .build();
 
-    List<ClientInstanceEvictionInfo> instanceEvictionInfos = Arrays.asList(testClientApplicationInfo1, testClientApplicationInfo2);
-    ClientInstanceEvictionConfig instanceEvictionConfig = new ClientInstanceEvictionConfig(instanceEvictionInfos);
+    List<ClientInstanceEvictionInfo> instanceEvictionInfos = Collections.singletonList(testClientApplicationInfo1);
+
+    instanceEvictionConfig = new ClientInstanceEvictionConfig(instanceEvictionInfos);
 
     DeadClientInstanceProcessor deadClientInstanceProcessor = new DeadClientInstanceProcessor(builder,
         timestampExtractor, instanceEvictionConfig);
@@ -61,12 +55,25 @@ class DeadClientInstanceProcessorOneHourWindowedWithNoGraceTests {
     Topology topology = builder.build();
     topologyTestDriver = new TopologyTestDriver(topology);
 
-    testSourceTopic = topologyTestDriver.createInputTopic(heartbeatSourceTopic,
+    sourceTopic = topologyTestDriver.createInputTopic(heartbeatSourceTopic,
         Serdes.String().serializer(), AppSerdes.heartbeatSerde().serializer());
   }
 
   @Test
   void sinksEmptyDeadInstanceListWhenTheVeryFirstWindowCloses() {
+
+    applicationSameWindowHeartbeatStream().forEach(heartbeat -> sourceTopic.pipeInput(applicationName, heartbeat));
+
+    sourceTopic.pipeInput(applicationName, heartbeatThatClosesTheLastWindow());
+
+    String sinkTopic = instanceEvictionConfig.getInstanceEvictionInfo().get(0).getSinkTopic();
+    TestOutputTopic<DeadInstanceWindow, ClientInstanceSet> applicationSinkTopic = topologyTestDriver.createOutputTopic(
+        sinkTopic, AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
+
+    Assertions.assertEquals(applicationSinkTopic.readValue(), new ClientInstanceSet(Collections.emptySet()));
+  }
+
+  private Stream<Heartbeat> applicationSameWindowHeartbeatStream() {
     Heartbeat instance1Heartbeat = Heartbeat.builder()
         .instanceName("instance1")
         .heartbeatEpoch(1660455801)
@@ -82,20 +89,13 @@ class DeadClientInstanceProcessorOneHourWindowedWithNoGraceTests {
         .heartbeatEpoch(1660455803)
         .build();
 
+    return Stream.of(instance1Heartbeat, instance2Heartbeat, instance3Heartbeat);
+  }
 
-    Stream.of(instance1Heartbeat, instance2Heartbeat, instance3Heartbeat)
-        .forEach(testRecord -> testSourceTopic.pipeInput(application1Name, instance1Heartbeat));
-
-    TestOutputTopic<DeadInstanceWindow, ClientInstanceSet> testSinkTopic = topologyTestDriver.createOutputTopic(testClientApplicationInfo1.getSinkTopic(),
-        AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
-
-    Heartbeat heartbeatThatClosesFirstWindow = Heartbeat.builder()
+  private Heartbeat heartbeatThatClosesTheLastWindow() {
+    return Heartbeat.builder()
         .instanceName("instance1")
         .heartbeatEpoch(1660460001)
         .build();
-
-    testSourceTopic.pipeInput(application1Name, heartbeatThatClosesFirstWindow);
-
-    Assertions.assertEquals(testSinkTopic.readValue(), new ClientInstanceSet(Collections.emptySet()));
   }
 }
