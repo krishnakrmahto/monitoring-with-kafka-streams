@@ -12,6 +12,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 public class ClientInstanceEvictionConfig {
 
-  List<ClientInstanceEvictionInfo> instanceEvictionInfo;
+  List<ClientInstanceEvictionInfo> instanceEvictionInfos;
 
 }

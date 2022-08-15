@@ -41,7 +41,7 @@ public class DeadClientInstanceProcessor {
     builder.addStateStore(Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(stateStoreName),
         Serdes.String(), AppSerdes.clientInstanceSetSerde()));
 
-    clientInstanceEvictionConfig.getInstanceEvictionInfo().forEach(clientInstanceEvictionInfo -> {
+    clientInstanceEvictionConfig.getInstanceEvictionInfos().forEach(clientInstanceEvictionInfo -> {
 
       TimeWindows timeWindows = getTimeWindows(clientInstanceEvictionInfo.getWindowDurationSeconds(),
           clientInstanceEvictionInfo.getGraceDurationSeconds());

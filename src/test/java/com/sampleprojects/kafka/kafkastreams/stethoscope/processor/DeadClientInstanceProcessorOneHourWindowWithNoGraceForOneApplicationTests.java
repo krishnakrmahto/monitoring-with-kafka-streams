@@ -9,6 +9,8 @@ import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.De
 import com.sampleprojects.kafka.kafkastreams.stethoscope.util.WindowedHeartbeats;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.TestInputTopic;
@@ -25,7 +27,7 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
 
   private TestOutputTopic<DeadInstanceWindow, ClientInstanceSet> applicationSinkTopic;
 
-  private static final String heartbeatSourceTopic = "application.evaluateDeadInstance.heartbeat";
+  private static final String evaluateDeadInstanceSourceTopic = "application.evaluateDeadInstance.heartbeat";
 
   private final static String applicationName = "application";
 
@@ -35,19 +37,19 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
   private final static List<Heartbeat> fourthWindowHeartbeats = WindowedHeartbeats.getFourthWindowHeartbeats();
 
   @BeforeEach
-  void setUp() {
+  void beforeEach() {
 
     StreamsBuilder builder = new StreamsBuilder();
     HeartbeatTimestampExtractor timestampExtractor = new HeartbeatTimestampExtractor();
 
-    ClientInstanceEvictionInfo testClientApplicationInfo1 = ClientInstanceEvictionInfo.builder()
+    ClientInstanceEvictionInfo testClientApplicationInfo = ClientInstanceEvictionInfo.builder()
         .applicationName(applicationName)
         .windowDurationSeconds(3600)
         .graceDurationSeconds(0)
         .sinkTopic("application.deadInstances")
         .build();
 
-    List<ClientInstanceEvictionInfo> instanceEvictionInfos = Collections.singletonList(testClientApplicationInfo1);
+    List<ClientInstanceEvictionInfo> instanceEvictionInfos = Collections.singletonList(testClientApplicationInfo);
 
     ClientInstanceEvictionConfig instanceEvictionConfig = new ClientInstanceEvictionConfig(
         instanceEvictionInfos);
@@ -57,14 +59,15 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
     deadClientInstanceProcessor.addProcessingSteps();
 
     Topology topology = builder.build();
+    @SuppressWarnings("resource")
     TopologyTestDriver topologyTestDriver = new TopologyTestDriver(topology);
 
-    sourceTopic = topologyTestDriver.createInputTopic(heartbeatSourceTopic,
+    sourceTopic = topologyTestDriver.createInputTopic(evaluateDeadInstanceSourceTopic,
         Serdes.String().serializer(), AppSerdes.heartbeatSerde().serializer());
 
-    String sinkTopic = instanceEvictionConfig.getInstanceEvictionInfo().get(0).getSinkTopic();
+    String sinkTopicName = testClientApplicationInfo.getSinkTopic();
     applicationSinkTopic = topologyTestDriver.createOutputTopic(
-        sinkTopic, AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
+        sinkTopicName, AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
   }
 
   @Test
@@ -91,5 +94,22 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
     sourceTopic.pipeInput(applicationName, heartbeatThatClosesSecondWindow);
 
     Assertions.assertEquals(new ClientInstanceSet(Collections.singleton("instance2")), applicationSinkTopic.readValue());
+  }
+
+  @Test
+  void sinksDeadInstancesFromTheSecondWindowWhenTheThirdWindowCloses() {
+
+    firstWindowHeartbeats.forEach(heartbeat -> sourceTopic.pipeInput(applicationName, heartbeat));
+
+    secondWindowHeartbeats.forEach(heartbeat -> sourceTopic.pipeInput(applicationName, heartbeat));
+
+    Assertions.assertEquals(new ClientInstanceSet(Collections.emptySet()), applicationSinkTopic.readValue());
+
+    thirdWindowHeartbeats.forEach(heartbeat -> sourceTopic.pipeInput(applicationName, heartbeat));
+    Assertions.assertEquals(new ClientInstanceSet(Collections.singleton("instance2")), applicationSinkTopic.readValue());
+
+    fourthWindowHeartbeats.forEach(heartbeat -> sourceTopic.pipeInput(applicationName, heartbeat));
+    Assertions.assertEquals(new ClientInstanceSet(Stream.of("instance4", "instance5").collect(
+        Collectors.toSet())), applicationSinkTopic.readValue());
   }
 }
