@@ -16,16 +16,14 @@ import org.apache.kafka.streams.TestOutputTopic;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests {
 
-  private static TopologyTestDriver topologyTestDriver;
+  private TestInputTopic<String, Heartbeat> sourceTopic;
 
-  private static TestInputTopic<String, Heartbeat> sourceTopic;
-
-  private static ClientInstanceEvictionConfig instanceEvictionConfig;
+  private TestOutputTopic<DeadInstanceWindow, ClientInstanceSet> applicationSinkTopic;
 
   private static final String heartbeatSourceTopic = "application.evaluateDeadInstance.heartbeat";
 
@@ -36,8 +34,8 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
   private final static List<Heartbeat> thirdWindowHeartbeats = WindowedHeartbeats.getThirdWindowHeartbeats();
   private final static List<Heartbeat> fourthWindowHeartbeats = WindowedHeartbeats.getFourthWindowHeartbeats();
 
-  @BeforeAll
-  static void setUp() {
+  @BeforeEach
+  void setUp() {
 
     StreamsBuilder builder = new StreamsBuilder();
     HeartbeatTimestampExtractor timestampExtractor = new HeartbeatTimestampExtractor();
@@ -51,17 +49,22 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
 
     List<ClientInstanceEvictionInfo> instanceEvictionInfos = Collections.singletonList(testClientApplicationInfo1);
 
-    instanceEvictionConfig = new ClientInstanceEvictionConfig(instanceEvictionInfos);
+    ClientInstanceEvictionConfig instanceEvictionConfig = new ClientInstanceEvictionConfig(
+        instanceEvictionInfos);
 
     DeadClientInstanceProcessor deadClientInstanceProcessor = new DeadClientInstanceProcessor(builder,
         timestampExtractor, instanceEvictionConfig);
     deadClientInstanceProcessor.addProcessingSteps();
 
     Topology topology = builder.build();
-    topologyTestDriver = new TopologyTestDriver(topology);
+    TopologyTestDriver topologyTestDriver = new TopologyTestDriver(topology);
 
     sourceTopic = topologyTestDriver.createInputTopic(heartbeatSourceTopic,
         Serdes.String().serializer(), AppSerdes.heartbeatSerde().serializer());
+
+    String sinkTopic = instanceEvictionConfig.getInstanceEvictionInfo().get(0).getSinkTopic();
+    applicationSinkTopic = topologyTestDriver.createOutputTopic(
+        sinkTopic, AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
   }
 
   @Test
@@ -72,14 +75,21 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
     Heartbeat heartbeatThatClosesFirstWindow = secondWindowHeartbeats.get(0);
     sourceTopic.pipeInput(applicationName, heartbeatThatClosesFirstWindow);
 
-    String sinkTopic = instanceEvictionConfig.getInstanceEvictionInfo().get(0).getSinkTopic();
-    TestOutputTopic<DeadInstanceWindow, ClientInstanceSet> applicationSinkTopic = topologyTestDriver.createOutputTopic(
-        sinkTopic, AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
-
-    Assertions.assertEquals(applicationSinkTopic.readValue(), new ClientInstanceSet(Collections.emptySet()));
+    Assertions.assertEquals(new ClientInstanceSet(Collections.emptySet()), applicationSinkTopic.readValue());
   }
 
+  @Test
   void sinksDeadInstancesFromTheFirstWindowWhenTheSecondWindowCloses() {
 
+    firstWindowHeartbeats.forEach(heartbeat -> sourceTopic.pipeInput(applicationName, heartbeat));
+
+    secondWindowHeartbeats.forEach(heartbeat -> sourceTopic.pipeInput(applicationName, heartbeat));
+
+    Assertions.assertEquals(new ClientInstanceSet(Collections.emptySet()), applicationSinkTopic.readValue());
+
+    Heartbeat heartbeatThatClosesSecondWindow = thirdWindowHeartbeats.get(0);
+    sourceTopic.pipeInput(applicationName, heartbeatThatClosesSecondWindow);
+
+    Assertions.assertEquals(new ClientInstanceSet(Collections.singleton("instance2")), applicationSinkTopic.readValue());
   }
 }
