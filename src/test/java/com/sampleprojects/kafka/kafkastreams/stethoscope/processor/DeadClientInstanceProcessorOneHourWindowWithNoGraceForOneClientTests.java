@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests {
+class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneClientTests {
 
   private TestInputTopic<String, Heartbeat> sourceTopic;
 
@@ -54,8 +54,7 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
 
     List<ClientInstanceEvictionInfo> instanceEvictionInfos = Collections.singletonList(testClientApplicationInfo);
 
-    ClientInstanceEvictionConfig instanceEvictionConfig = new ClientInstanceEvictionConfig(
-        instanceEvictionInfos);
+    ClientInstanceEvictionConfig instanceEvictionConfig = new ClientInstanceEvictionConfig(instanceEvictionInfos);
 
     DeadClientInstanceProcessor deadClientInstanceProcessor = new DeadClientInstanceProcessor(builder,
         timestampExtractor, instanceEvictionConfig);
@@ -69,8 +68,8 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneApplicationTests 
         Serdes.String().serializer(), AppSerdes.heartbeatSerde().serializer());
 
     String sinkTopicName = testClientApplicationInfo.getSinkTopic();
-    applicationSinkTopic = topologyTestDriver.createOutputTopic(
-        sinkTopicName, AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
+    applicationSinkTopic = topologyTestDriver.createOutputTopic(sinkTopicName,
+        AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
   }
 
   @AfterEach

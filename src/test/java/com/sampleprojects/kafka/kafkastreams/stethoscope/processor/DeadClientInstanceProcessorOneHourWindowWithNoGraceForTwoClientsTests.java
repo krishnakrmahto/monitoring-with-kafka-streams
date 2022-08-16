@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class DeadClientInstanceProcessorOneHourWindowWithNoGraceForTwoApplicationsTests {
+public class DeadClientInstanceProcessorOneHourWindowWithNoGraceForTwoClientsTests {
   private TestInputTopic<String, Heartbeat> sourceTopic;
 
   private TestOutputTopic<DeadInstanceWindow, ClientInstanceSet> application1SinkTopic;
