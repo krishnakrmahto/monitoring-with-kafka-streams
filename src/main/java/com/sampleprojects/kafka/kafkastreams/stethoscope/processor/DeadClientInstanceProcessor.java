@@ -36,7 +36,7 @@ public class DeadClientInstanceProcessor {
   private static final String heartbeatSourceTopic = "application.evaluateDeadInstance.heartbeat";
 
   @PostConstruct
-  public void addProcessingSteps() {
+  public void processingSteps() {
 
     builder.addStateStore(Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(stateStoreName),
         Serdes.String(), AppSerdes.clientInstanceSetSerde()));

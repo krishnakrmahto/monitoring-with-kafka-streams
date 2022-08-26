@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class DeadClientInstanceProcessorOneHourWindowWithNoGraceForTwoClientsTests {
+public class DeadClientInstanceProcessorOneHourWindowNoGraceTwoClientsTests {
   private TestInputTopic<String, Heartbeat> sourceTopic;
 
   private TestOutputTopic<DeadInstanceWindow, ClientInstanceSet> application1SinkTopic;
@@ -37,7 +37,6 @@ public class DeadClientInstanceProcessorOneHourWindowWithNoGraceForTwoClientsTes
   private final static List<Heartbeat> firstWindowHeartbeats = WindowedHeartbeats.getFirstWindowHeartbeats();
   private final static List<Heartbeat> secondWindowHeartbeats = WindowedHeartbeats.getSecondWindowHeartbeats();
   private final static List<Heartbeat> thirdWindowHeartbeats = WindowedHeartbeats.getThirdWindowHeartbeats();
-  private final static List<Heartbeat> fourthWindowHeartbeats = WindowedHeartbeats.getFourthWindowHeartbeats();
 
   @BeforeEach
   void beforeEach() {
@@ -65,7 +64,7 @@ public class DeadClientInstanceProcessorOneHourWindowWithNoGraceForTwoClientsTes
 
     DeadClientInstanceProcessor deadClientInstanceProcessor = new DeadClientInstanceProcessor(builder,
     timestampExtractor, instanceEvictionConfig);
-    deadClientInstanceProcessor.addProcessingSteps();
+    deadClientInstanceProcessor.processingSteps();
 
     Topology topology = builder.build();
 

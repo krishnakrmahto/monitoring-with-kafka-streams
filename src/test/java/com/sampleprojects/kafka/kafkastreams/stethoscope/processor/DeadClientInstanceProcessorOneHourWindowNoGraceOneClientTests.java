@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneClientTests {
+class DeadClientInstanceProcessorOneHourWindowNoGraceOneClientTests {
 
   private TestInputTopic<String, Heartbeat> sourceTopic;
 
@@ -58,7 +58,7 @@ class DeadClientInstanceProcessorOneHourWindowWithNoGraceForOneClientTests {
 
     DeadClientInstanceProcessor deadClientInstanceProcessor = new DeadClientInstanceProcessor(builder,
         timestampExtractor, instanceEvictionConfig);
-    deadClientInstanceProcessor.addProcessingSteps();
+    deadClientInstanceProcessor.processingSteps();
 
     Topology topology = builder.build();
 
