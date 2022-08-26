@@ -2,12 +2,15 @@ package com.sampleprojects.kafka.kafkastreams.stethoscope.processor;
 
 import com.sampleprojects.kafka.kafkastreams.stethoscope.config.AppSerdes;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.config.clientinstanceeviction.ClientInstanceEvictionConfig;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.consumed.Heartbeat;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.ClientInstanceSet;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.DeadInstanceWindow;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.processor.statefultransformer.LastWindowDeadInstanceEvaluator;
 import java.time.Duration;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
@@ -26,20 +29,25 @@ import org.springframework.stereotype.Component;
 public class DeadClientInstanceProcessor {
 
   private final StreamsBuilder builder;
-
   private final HeartbeatTimestampExtractor heartbeatTimestampExtractor;
-
-  private final String stateStoreName = "test-state-store-11";
-
   private final ClientInstanceEvictionConfig clientInstanceEvictionConfig;
 
+  private final String stateStoreName = "test-state-store-11";
   private static final String heartbeatSourceTopic = "application.evaluateDeadInstance.heartbeat";
+
+  private static final Serde<String> stringSerde = Serdes.String();
+
+  private static final Serde<ClientInstanceSet> clientInstanceSetSerde = AppSerdes.clientInstanceSetSerde();
+
+  private static final Serde<Heartbeat> heartbeatSerde = AppSerdes.heartbeatSerde();
+
+  private static final Serde<DeadInstanceWindow> deadInstanceWindowSerde = AppSerdes.deadInstanceWindowSerde();
 
   @PostConstruct
   public void processingSteps() {
 
     builder.addStateStore(Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(stateStoreName),
-        Serdes.String(), AppSerdes.clientInstanceSetSerde()));
+        stringSerde, clientInstanceSetSerde));
 
     clientInstanceEvictionConfig.getInstanceEvictionInfos().forEach(clientInstanceEvictionInfo -> {
 
@@ -47,18 +55,17 @@ public class DeadClientInstanceProcessor {
           clientInstanceEvictionInfo.getGraceDurationSeconds());
 
       builder.stream(heartbeatSourceTopic,
-              Consumed.with(Serdes.String(), AppSerdes.heartbeatSerde()).withTimestampExtractor(heartbeatTimestampExtractor))
+              Consumed.with(stringSerde, heartbeatSerde).withTimestampExtractor(heartbeatTimestampExtractor))
           .filter(((key, value) -> key.equals(clientInstanceEvictionInfo.getApplicationName())))
-          .groupByKey(Grouped.with(Serdes.String(), AppSerdes.heartbeatSerde()))
+          .groupByKey(Grouped.with(stringSerde, heartbeatSerde))
           .windowedBy(timeWindows)
           .aggregate(ClientInstanceSet::new, ((key, value, aggregate) -> aggregate.addInstance(value.getInstanceName())),
-              Materialized.with(Serdes.String(), AppSerdes.clientInstanceSetSerde()))
+              Materialized.with(stringSerde, clientInstanceSetSerde))
           .suppress(Suppressed.untilWindowCloses(BufferConfig.unbounded()))
           .toStream()
           .transform(() -> new LastWindowDeadInstanceEvaluator(stateStoreName), stateStoreName)
           .peek((key, evictedInstances) -> log.info("key: {}, value: {}", key, evictedInstances))
-          .to(clientInstanceEvictionInfo.getSinkTopic(), Produced.with(AppSerdes.deadInstanceWindowSerde(),
-              AppSerdes.clientInstanceSetSerde()));
+          .to(clientInstanceEvictionInfo.getSinkTopic(), Produced.with(deadInstanceWindowSerde, clientInstanceSetSerde));
 
     });
   }
