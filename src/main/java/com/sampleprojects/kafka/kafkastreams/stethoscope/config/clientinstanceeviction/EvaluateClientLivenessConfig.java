@@ -10,8 +10,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ClientInstanceEvictionConfig {
+public class EvaluateClientLivenessConfig {
 
-  List<ClientInstanceEvictionInfo> instanceEvictionInfos;
+  List<EvaluateClientLivenessSetting> evaluateClientLivenessSettings;
 
 }

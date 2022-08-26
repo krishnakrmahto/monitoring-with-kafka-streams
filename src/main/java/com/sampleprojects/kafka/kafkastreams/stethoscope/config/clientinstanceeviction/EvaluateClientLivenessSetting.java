@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @Builder
-public class ClientInstanceEvictionInfo {
+public class EvaluateClientLivenessSetting {
 
   private String applicationName;
   private long windowDurationSeconds;

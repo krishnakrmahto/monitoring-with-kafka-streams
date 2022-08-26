@@ -4,12 +4,12 @@ spring:
 
 stethoscope:
   clients:
-    instance-eviction-infos:
+    evaluate-client-liveness-settings:
       - application-name: order-service
         window-duration-seconds: 3600
         grace-duration-seconds: 0
         sink-topic: "orderService.deadInstances"
-      - application-name: orderbox
+      - application-name: payment-service
         window-duration-seconds: 3600
         grace-duration-seconds: 0
-        sink-topic: "orderbox.deadInstances"
+        sink-topic: "paymentService.deadInstances"

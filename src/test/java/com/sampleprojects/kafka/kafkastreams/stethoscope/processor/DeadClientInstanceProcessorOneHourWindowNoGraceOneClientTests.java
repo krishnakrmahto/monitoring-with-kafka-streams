@@ -1,8 +1,8 @@
 package com.sampleprojects.kafka.kafkastreams.stethoscope.processor;
 
 import com.sampleprojects.kafka.kafkastreams.stethoscope.config.AppSerdes;
-import com.sampleprojects.kafka.kafkastreams.stethoscope.config.clientinstanceeviction.ClientInstanceEvictionConfig;
-import com.sampleprojects.kafka.kafkastreams.stethoscope.config.clientinstanceeviction.ClientInstanceEvictionInfo;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.config.clientinstanceeviction.EvaluateClientLivenessConfig;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.config.clientinstanceeviction.EvaluateClientLivenessSetting;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.consumed.Heartbeat;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.ClientInstanceSet;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.DeadInstanceWindow;
@@ -45,16 +45,16 @@ class DeadClientInstanceProcessorOneHourWindowNoGraceOneClientTests {
     StreamsBuilder builder = new StreamsBuilder();
     HeartbeatTimestampExtractor timestampExtractor = new HeartbeatTimestampExtractor();
 
-    ClientInstanceEvictionInfo testClientApplicationInfo = ClientInstanceEvictionInfo.builder()
+    EvaluateClientLivenessSetting evaluateClientLivenessSetting = EvaluateClientLivenessSetting.builder()
         .applicationName(applicationName)
         .windowDurationSeconds(3600)
         .graceDurationSeconds(0)
         .sinkTopic("application.deadInstances")
         .build();
 
-    List<ClientInstanceEvictionInfo> instanceEvictionInfos = Collections.singletonList(testClientApplicationInfo);
+    List<EvaluateClientLivenessSetting> evaluateClientLivenessSettings = Collections.singletonList(evaluateClientLivenessSetting);
 
-    ClientInstanceEvictionConfig instanceEvictionConfig = new ClientInstanceEvictionConfig(instanceEvictionInfos);
+    EvaluateClientLivenessConfig instanceEvictionConfig = new EvaluateClientLivenessConfig(evaluateClientLivenessSettings);
 
     DeadClientInstanceProcessor deadClientInstanceProcessor = new DeadClientInstanceProcessor(builder,
         timestampExtractor, instanceEvictionConfig);
@@ -67,7 +67,7 @@ class DeadClientInstanceProcessorOneHourWindowNoGraceOneClientTests {
     sourceTopic = topologyTestDriver.createInputTopic(evaluateDeadInstanceSourceTopic,
         Serdes.String().serializer(), AppSerdes.heartbeatSerde().serializer());
 
-    String sinkTopicName = testClientApplicationInfo.getSinkTopic();
+    String sinkTopicName = evaluateClientLivenessSetting.getSinkTopic();
     applicationSinkTopic = topologyTestDriver.createOutputTopic(sinkTopicName,
         AppSerdes.deadInstanceWindowSerde().deserializer(), AppSerdes.clientInstanceSetSerde().deserializer());
   }

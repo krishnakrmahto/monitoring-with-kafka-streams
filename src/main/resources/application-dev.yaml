@@ -15,7 +15,7 @@ default:
 
 stethoscope:
   clients:
-    instance-eviction-infos:
+    evaluate-client-liveness-settings:
       - application-name: order-service
         window-duration-seconds: 3600
         grace-duration-seconds: 0

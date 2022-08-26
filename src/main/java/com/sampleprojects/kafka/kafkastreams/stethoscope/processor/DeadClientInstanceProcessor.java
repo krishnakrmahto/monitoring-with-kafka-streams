@@ -1,7 +1,7 @@
 package com.sampleprojects.kafka.kafkastreams.stethoscope.processor;
 
 import com.sampleprojects.kafka.kafkastreams.stethoscope.config.AppSerdes;
-import com.sampleprojects.kafka.kafkastreams.stethoscope.config.clientinstanceeviction.ClientInstanceEvictionConfig;
+import com.sampleprojects.kafka.kafkastreams.stethoscope.config.clientinstanceeviction.EvaluateClientLivenessConfig;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.consumed.Heartbeat;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.ClientInstanceSet;
 import com.sampleprojects.kafka.kafkastreams.stethoscope.dto.message.produced.DeadInstanceWindow;
@@ -30,7 +30,7 @@ public class DeadClientInstanceProcessor {
 
   private final StreamsBuilder builder;
   private final HeartbeatTimestampExtractor heartbeatTimestampExtractor;
-  private final ClientInstanceEvictionConfig clientInstanceEvictionConfig;
+  private final EvaluateClientLivenessConfig evaluateClientLivenessConfig;
 
   private final String stateStoreName = "test-state-store-11";
   private static final String heartbeatSourceTopic = "application.evaluateDeadInstance.heartbeat";
@@ -49,7 +49,7 @@ public class DeadClientInstanceProcessor {
     builder.addStateStore(Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(stateStoreName),
         stringSerde, clientInstanceSetSerde));
 
-    clientInstanceEvictionConfig.getInstanceEvictionInfos().forEach(clientInstanceEvictionInfo -> {
+    evaluateClientLivenessConfig.getEvaluateClientLivenessSettings().forEach(clientInstanceEvictionInfo -> {
 
       TimeWindows timeWindows = getTimeWindows(clientInstanceEvictionInfo.getWindowDurationSeconds(),
           clientInstanceEvictionInfo.getGraceDurationSeconds());
